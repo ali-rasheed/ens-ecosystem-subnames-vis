@@ -242,6 +242,14 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
             borderRadius: 3, padding: '8px 10px', fontSize: 13, fontFamily: 'var(--mono)',
             fontWeight: 500, outline: 'none',
           }} />
+        <input type="text" value={state.totalLabel || ''}
+          onChange={e => update({ totalLabel: e.target.value })}
+          placeholder="Total label (optional)"
+          style={{
+            width: '100%', background: '#fff', color: ENS.ink, border: '1px solid #E1E1E0',
+            borderRadius: 3, padding: '8px 10px', fontSize: 13, fontFamily: 'var(--mono)',
+            fontWeight: 500, outline: 'none', marginTop: 8,
+          }} />
       </Section>
 
       <Section title="Export">

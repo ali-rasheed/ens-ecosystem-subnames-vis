@@ -70,7 +70,7 @@ function Stage({ children, stageRef, W, H }) {
 // Layout: column flex + minHeight:0 on the chart row so the treemap always fits between header
 // and footer without measuring footer height (avoids legend/treemap overlap on soft reload).
 function DiagramFrame({ state, W, H }) {
-  const { title, items, view, showLabels, showCounts, showLegend } = state;
+  const { title, totalLabel, items, view, showLabels, showCounts, showLegend } = state;
   const total = items.reduce((s, x) => s + (Number(x.count) || 0), 0);
   const totalApprox = `~${(Math.round(total / 1_000_000) * 1_000_000).toLocaleString()}`;
 
@@ -113,7 +113,7 @@ function DiagramFrame({ state, W, H }) {
       cancelAnimationFrame(id);
       ro.disconnect();
     };
-  }, [W, H, items, showLegend, title]);
+  }, [W, H, items, showLegend, title, totalLabel]);
 
   const fmt = (n) => {
     if (n >= 1e6) return (n / 1e6).toFixed(n >= 10e6 ? 1 : 2).replace(/\.0+$|(\.\d*?)0+$/, '$1') + 'M';
@@ -156,7 +156,7 @@ function DiagramFrame({ state, W, H }) {
             fontFamily: 'var(--mono)', fontSize: totalLabelSize, fontWeight: 500,
             color: '#737373', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6
           }}>
-            Total subnames
+            {totalLabel || 'Total Names'}
           </div>
           <div style={{
             fontFamily: 'var(--sans)', fontSize: totalNumSize, fontWeight: 500,
@@ -266,6 +266,7 @@ export default function App() {
       showCounts: true,
       showLegend: true,
       title: 'Subnames across the ENS ecosystem',
+      totalLabel: 'Total Names',
       items: DEFAULTS
     };
   });
