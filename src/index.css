@@ -1,0 +1,121 @@
+/* Global typography + layout shell. Fonts live under /public/fonts (optional). */
+
+@font-face {
+  font-family: 'ABC Monument Grotesk';
+  src: url('/fonts/ABCMonumentGroteskVariableVF.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ABC Monument Grotesk Mono';
+  src: url('/fonts/mono-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ABC Monument Grotesk Mono';
+  src: url('/fonts/mono-medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'ABC Marist';
+  src: url('/fonts/serif-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --quartz-0:    #FFFFFF;
+  --quartz-50:   #FAF9F7;
+  --quartz-100:  #EEEDED;
+  --quartz-200:  #E1E1E0;
+  --quartz-300:  #C7C6C4;
+  --quartz-400:  #737373;
+  --quartz-500:  #595755;
+  --quartz-700:  #43413F;
+  --quartz-900:  #191919;
+
+  --lapis-50:    #EDF6FB;
+  --lapis-100:   #DBF0F8;
+  --lapis-300:   #80C4E0;
+  --lapis-400:   #39B4EA;
+  --lapis-500:   #0082BB;
+  --lapis-900:   #02293B;
+
+  --peridot-50:  #E8F6ED;
+  --peridot-100: #D1EEDF;
+  --peridot-400: #1CBF46;
+  --peridot-500: #007C20;
+  --peridot-900: #033010;
+
+  --garnet-50:   #FFF8FA;
+  --garnet-100:  #FEEAF0;
+  --garnet-400:  #F569AB;
+  --garnet-500:  #E72A96;
+  --garnet-900:  #5A0024;
+
+  --citrine-50:  #FCFBEF;
+  --citrine-100: #F8F7E2;
+  --citrine-400: #E7A259;
+  --citrine-500: #984D1B;
+  --citrine-900: #441B03;
+
+  --ens-blue:           var(--lapis-500);
+  --ens-light-blue:     #cee1e8;
+  --ens-medium-blue:    #093c52;
+  --ens-dark-blue:      #011a25;
+  --ens-white:          #f6f6f6;
+
+  --sans: 'ABC Monument Grotesk', 'Inter', system-ui, sans-serif;
+  --mono: 'ABC Monument Grotesk Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --serif: 'ABC Marist', Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+
+/* Full viewport chain so nested flex + ResizeObserver get real dimensions for stage scaling. */
+html {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  height: 100%;
+  max-height: 100dvh;
+  background: var(--ens-white);
+  color: var(--ens-dark-blue);
+  font-family: var(--sans);
+  font-feature-settings: "ss01" on, "ss03" on;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  max-height: 100dvh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+::selection { background: var(--ens-blue); color: #fff; }
+
+input[type="range"] { accent-color: var(--ens-blue); }
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
