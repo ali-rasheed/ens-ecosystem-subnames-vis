@@ -160,7 +160,7 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
       flexShrink: 0,
     }}>
       <div style={{ padding: '24px 22px 18px', borderBottom: '1px solid #E1E1E0' }}>
-        <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: ENS.blue, marginBottom: 6, fontFamily: 'var(--mono)', fontWeight: 500 }}>ENS · Subnames</div>
+        <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: ENS.blue, marginBottom: 6, fontFamily: 'var(--mono)', fontWeight: 500 }}>ENS · Ecosysteme</div>
         <div style={{ fontSize: 22, fontWeight: 500, letterSpacing: -0.5, lineHeight: 1.05 }}>Subname Visualizer</div>
         <div style={{ fontSize: 12, color: '#737373', marginTop: 6, fontFamily: 'var(--mono)' }}>
           Spatial diagram of registered subnames — proportional to count.
@@ -182,7 +182,6 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
         <Seg options={[
           { value: 'treemap', label: 'Tiles' },
           { value: 'packed', label: 'Bubbles' },
-          { value: 'orbit', label: 'Orbit' },
           { value: 'bars', label: 'Bars' },
         ]} value={state.view} onChange={v => update({ view: v })} />
         <div style={{ height: 12 }} />
@@ -230,15 +229,7 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
           style={{
             width: '100%', background: '#fff', color: ENS.ink, border: '1px solid #E1E1E0',
             borderRadius: 3, padding: '8px 10px', fontSize: 13, fontFamily: 'var(--mono)',
-            fontWeight: 500, outline: 'none', marginBottom: 8,
-          }} />
-        <input type="text" value={state.subtitle}
-          onChange={e => update({ subtitle: e.target.value })}
-          placeholder="Subtitle / source"
-          style={{
-            width: '100%', background: '#fff', color: ENS.ink, border: '1px solid #E1E1E0',
-            borderRadius: 3, padding: '8px 10px', fontSize: 13, fontFamily: 'var(--mono)',
-            fontWeight: 400, outline: 'none',
+            fontWeight: 500, outline: 'none',
           }} />
       </Section>
 
@@ -260,15 +251,14 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
           {exporting === 'svg' ? 'Rendering…' : 'Download SVG'}
         </button>
         <div style={{ fontSize: 11, color: '#A1A1A1', marginTop: 12, lineHeight: 1.5, fontFamily: 'var(--mono)' }}>
-          1600 × 1000 · transparent bg
+          PNG & SVG export at 2× canvas size (e.g. 1:1 → 2400 × 2400).
         </div>
       </Section>
 
       <div style={{ flex: 1 }} />
       <div style={{ padding: '14px 22px 18px', fontSize: 10, color: '#A1A1A1',
         fontFamily: 'var(--mono)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
-        ens.domains · v1
-      </div>
+subname visualizer v1.0       </div>
     </div>
   );
 }

@@ -6,10 +6,53 @@ import React from 'react';
 import { ENS } from './palette.js';
 import { PATTERNS } from './shader-source.js';
 import { ShaderCanvas } from './ShaderCanvas.jsx';
-// Three views, all driven by the same data array:
-//   - packed: circle-packing, area = count
-//   - orbit:  planets orbiting the largest parent (radius = count)
-//   - bars:   horizontal proportional bars, ordered desc
+// Views, all driven by the same data array:
+//   - treemap: area-proportional tiles
+//   - packed:  circle-packing, area = count
+//   - bars:    horizontal proportional bars, ordered desc
+
+/** Map a swatch hex to ShaderCanvas state (treemap, bubbles, bars share this). */
+function getShaderStateForColor(hex, darkInk, idx, minDim, opts = {}) {
+  const { rectAspect = 1, cornerRadius = 0.18, animationSpeed = 0.28 } = opts;
+  const normalizeHex = (v) => (v || '').trim().toUpperCase();
+  const color = normalizeHex(hex);
+  const directMap = {
+    '#02293B': { palette: 2, warpShade: 0, weftShade: 1, bgShade: 2 },
+    '#0082BB': { palette: 2, warpShade: 1, weftShade: 3, bgShade: 2 },
+    '#39B4EA': { palette: 2, warpShade: 3, weftShade: 1, bgShade: 2 },
+    '#80C4E0': { palette: 2, warpShade: 3, weftShade: 2, bgShade: 2 },
+    '#033010': { palette: 3, warpShade: 0, weftShade: 1, bgShade: 2 },
+    '#007C20': { palette: 3, warpShade: 1, weftShade: 3, bgShade: 2 },
+    '#1CBF46': { palette: 3, warpShade: 3, weftShade: 1, bgShade: 2 },
+    '#5A0024': { palette: 1, warpShade: 0, weftShade: 1, bgShade: 2 },
+    '#E72A96': { palette: 1, warpShade: 1, weftShade: 3, bgShade: 2 },
+    '#F569AB': { palette: 1, warpShade: 3, weftShade: 1, bgShade: 2 },
+    '#441B03': { palette: 0, warpShade: 0, weftShade: 1, bgShade: 2 },
+    '#984D1B': { palette: 0, warpShade: 1, weftShade: 3, bgShade: 2 },
+    '#E7A259': { palette: 0, warpShade: 3, weftShade: 1, bgShade: 2 },
+    '#191919': { palette: 4, warpShade: 0, weftShade: 1, bgShade: 2 },
+    '#737373': { palette: 4, warpShade: 3, weftShade: 1, bgShade: 2 },
+    '#595755': { palette: 4, warpShade: 1, weftShade: 3, bgShade: 2 },
+    '#E1E1E0': { palette: 4, warpShade: 2, weftShade: 3, bgShade: 2 },
+    '#FAF9F7': { palette: 4, warpShade: 2, weftShade: 3, bgShade: 2 },
+    '#FFEC3D': { palette: 0, warpShade: 3, weftShade: 1, bgShade: 2 },
+  };
+  const mapped = directMap[color] || { palette: 2, warpShade: 1, weftShade: 3, bgShade: 2 };
+  return {
+    pattern: idx % (PATTERNS?.length || 1),
+    palette: mapped.palette,
+    bgShade: mapped.bgShade,
+    warpShade: mapped.warpShade,
+    weftShade: mapped.weftShade,
+    gridSize: Math.max(16, Math.min(96, Math.round(minDim * 0.12))),
+    rectAspect,
+    cornerRadius,
+    animationSpeed,
+    gradSteps: 0,
+    shimmer: !darkInk && idx % 3 === 0,
+    skipEntranceReveal: true,
+  };
+}
 
 // ─────────────────────────────────────────────────────────────
 // Packed circle layout — front-loaded greedy packing
@@ -107,7 +150,7 @@ function packCircles(items, W, H) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PackedView — circles, area = count
+// PackedView — circles, area = count; woven shader like treemap (WebGL under labels).
 // ─────────────────────────────────────────────────────────────
 function PackedView({ items, W, H, showLabels, showCounts, total }) {
   const sorted = [...items].sort((a, b) => b.count - a.count).filter(it => it.count > 0);
@@ -120,13 +163,10 @@ function PackedView({ items, W, H, showLabels, showCounts, total }) {
   };
 
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
-      <defs>
-        <pattern id="dots-pattern" width="6" height="6" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="1" fill={ENS.blueDark} opacity="0.18" />
-        </pattern>
-      </defs>
-      {packed.map((p) => {
+    <div style={{ width: W, height: H, position: 'relative', overflow: 'hidden' }}>
+      {packed.map((p, i) => {
+        const diam = p.r * 2;
+        const minDim = diam;
         const pct = total > 0 ? (p.count / total) * 100 : 0;
         const labelFits = p.r > 44;
         const fontSize = Math.max(11, Math.min(p.r * 0.22, 36));
@@ -134,157 +174,71 @@ function PackedView({ items, W, H, showLabels, showCounts, total }) {
         const ink = p.darkInk ? ENS.ink : '#fff';
         const subInk = p.darkInk ? ENS.blueMid : 'rgba(255,255,255,0.78)';
         return (
-          <g key={p.key}>
-            <circle cx={p.x} cy={p.y} r={p.r} fill={p.color} />
-            {showLabels && labelFits && (
-              <text x={p.x} y={p.y - countSize * 0.12} textAnchor="middle"
-                fontFamily="var(--mono)" fontWeight="500" fontSize={fontSize}
-                fill={ink} style={{ letterSpacing: 0 }}>
-                {p.label}
-              </text>
-            )}
-            {showCounts && labelFits && (
-              <text x={p.x} y={p.y + countSize * 0.85} textAnchor="middle"
-                fontFamily="var(--sans)" fontWeight="500" fontSize={countSize}
-                fill={ink} style={{ letterSpacing: -countSize * 0.025 }}>
-                {fmt(p.count)}
-              </text>
-            )}
-            {showCounts && labelFits && p.r > 70 && (
-              <text x={p.x} y={p.y + countSize * 0.85 + fontSize * 1.1} textAnchor="middle"
-                fontFamily="var(--mono)" fontWeight="400" fontSize={fontSize * 0.7}
-                fill={subInk}>
-                {pct.toFixed(1)}%
-              </text>
-            )}
-            {/* tiny callouts for circles too small to label inside */}
+          <React.Fragment key={p.key}>
+            <div style={{
+              position: 'absolute',
+              left: p.x - p.r,
+              top: p.y - p.r,
+              width: diam,
+              height: diam,
+              borderRadius: '50%',
+              overflow: 'hidden',
+              background: p.color,
+              boxSizing: 'border-box',
+            }}>
+              <div style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                minWidth: 0, minHeight: 0, overflow: 'hidden', opacity: 0.25,
+              }}>
+                <ShaderCanvas state={getShaderStateForColor(p.color, p.darkInk, i, minDim)} />
+              </div>
+              {showLabels && labelFits && (
+                <div style={{
+                  position: 'absolute', left: '50%', top: `calc(50% - ${showCounts ? countSize * 0.42 : 0}px)`,
+                  transform: 'translate(-50%, -50%)', fontFamily: 'var(--mono)', fontWeight: 500,
+                  fontSize, color: ink, pointerEvents: 'none', whiteSpace: 'nowrap', textAlign: 'center',
+                }}>
+                  {p.label}
+                </div>
+              )}
+              {showCounts && labelFits && (
+                <div style={{
+                  position: 'absolute', left: '50%', top: `calc(50% + ${showLabels ? countSize * 0.35 : 0}px)`,
+                  transform: 'translate(-50%, -50%)', fontFamily: 'var(--sans)', fontWeight: 500,
+                  fontSize: countSize, color: ink, letterSpacing: -countSize * 0.025,
+                  pointerEvents: 'none', whiteSpace: 'nowrap',
+                }}>
+                  {fmt(p.count)}
+                </div>
+              )}
+              {showCounts && labelFits && p.r > 70 && (
+                <div style={{
+                  position: 'absolute', left: '50%', top: `calc(50% + ${showLabels ? countSize * 0.35 : 0}px + ${countSize * 0.55}px)`,
+                  transform: 'translate(-50%, -50%)', fontFamily: 'var(--mono)', fontWeight: 400,
+                  fontSize: fontSize * 0.7, color: subInk, pointerEvents: 'none',
+                }}>
+                  {pct.toFixed(1)}%
+                </div>
+              )}
+            </div>
             {!labelFits && showLabels && (
-              <text x={p.x} y={p.y + p.r + 14} textAnchor="middle"
-                fontFamily="var(--mono)" fontWeight="500" fontSize="11"
-                fill={ENS.blueMid}>
-                {p.label} · {fmt(p.count)}
-              </text>
+              <div style={{
+                position: 'absolute', left: p.x, top: p.y + p.r + 14, transform: 'translateX(-50%)',
+                fontFamily: 'var(--mono)', fontWeight: 500, fontSize: 11, color: ENS.blueMid,
+                pointerEvents: 'none', whiteSpace: 'nowrap', textAlign: 'center',
+              }}>
+                {p.label}{showCounts ? ` · ${fmt(p.count)}` : ''}
+              </div>
             )}
-          </g>
+          </React.Fragment>
         );
       })}
-    </svg>
+    </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// OrbitView — concentric rings; biggest at center; dot size by count.
-// Quietly poetic — feels like a system map.
-// ─────────────────────────────────────────────────────────────
-function OrbitView({ items, W, H, showLabels, showCounts, total }) {
-  const sorted = [...items].sort((a, b) => b.count - a.count).filter(it => it.count > 0);
-  if (sorted.length === 0) return <svg width={W} height={H} />;
-
-  const cx = W / 2, cy = H / 2;
-  const maxR = Math.min(W, H) * 0.38;
-  const maxCount = sorted[0].count;
-  const dotMax = Math.min(W, H) * 0.085;
-  const dotMin = 12;
-
-  const center = sorted[0];
-  const orbiters = sorted.slice(1);
-  const N = orbiters.length;
-
-  const fmt = (n) => {
-    if (n >= 1e6) return (n / 1e6).toFixed(n >= 10e6 ? 1 : 2).replace(/\.0+$|(\.\d*?)0+$/, '$1') + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(n >= 10e3 ? 0 : 1).replace(/\.0+$|(\.\d*?)0+$/, '$1') + 'K';
-    return String(n);
-  };
-
-  // Ring radii — a single ring if N <= 5, two rings otherwise
-  const useTwoRings = N > 5;
-  const ringR1 = maxR * (useTwoRings ? 0.62 : 0.85);
-  const ringR2 = maxR * 0.95;
-  const inner = orbiters.slice(0, useTwoRings ? Math.ceil(N / 2) : N);
-  const outer = useTwoRings ? orbiters.slice(Math.ceil(N / 2)) : [];
-
-  const centerR = Math.sqrt(center.count / maxCount) * (Math.min(W, H) * 0.16);
-  const centerR2 = Math.max(centerR, Math.min(W, H) * 0.085);
-
-  const Place = (group, ringR, phaseOffset = 0) =>
-    group.map((it, i) => {
-      const a = phaseOffset + (i / Math.max(group.length, 1)) * Math.PI * 2 - Math.PI / 2;
-      const x = cx + Math.cos(a) * ringR;
-      const y = cy + Math.sin(a) * ringR;
-      const r = Math.max(dotMin, Math.sqrt(it.count / maxCount) * dotMax);
-      return { ...it, x, y, r, a };
-    });
-
-  const innerPlaced = Place(inner, ringR1, 0);
-  const outerPlaced = Place(outer, ringR2, Math.PI / Math.max(outer.length || 1, 1));
-
-  const all = [...innerPlaced, ...outerPlaced];
-
-  return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
-      {/* orbital rings */}
-      <circle cx={cx} cy={cy} r={ringR1} fill="none" stroke={ENS.blueDark} strokeOpacity="0.15" strokeWidth="1" strokeDasharray="2 4" />
-      {useTwoRings && (
-        <circle cx={cx} cy={cy} r={ringR2} fill="none" stroke={ENS.blueDark} strokeOpacity="0.12" strokeWidth="1" strokeDasharray="2 4" />
-      )}
-
-      {/* connection lines */}
-      {all.map((p) => (
-        <line key={'l' + p.key} x1={cx} y1={cy} x2={p.x} y2={p.y}
-          stroke={ENS.blueDark} strokeOpacity="0.1" strokeWidth="1" />
-      ))}
-
-      {/* center node */}
-      <circle cx={cx} cy={cy} r={centerR2} fill={center.color} />
-      {showLabels && (
-        <text x={cx} y={cy - 5} textAnchor="middle"
-          fontFamily="var(--mono)" fontWeight="500" fontSize={Math.max(13, centerR2 * 0.18)}
-          fill={center.darkInk ? ENS.ink : '#fff'}>
-          {center.label}
-        </text>
-      )}
-      {showCounts && (
-        <text x={cx} y={cy + Math.max(15, centerR2 * 0.22)} textAnchor="middle"
-          fontFamily="var(--sans)" fontWeight="500" fontSize={Math.max(18, centerR2 * 0.3)}
-          fill={center.darkInk ? ENS.ink : '#fff'}
-          style={{ letterSpacing: -1 }}>
-          {fmt(center.count)}
-        </text>
-      )}
-
-      {/* orbiters */}
-      {all.map((p) => {
-        const labelOut = p.r < 26;
-        const lx = labelOut ? p.x + Math.cos(p.a) * (p.r + 12) : p.x;
-        const ly = labelOut ? p.y + Math.sin(p.a) * (p.r + 12) : p.y;
-        const anchor = labelOut ? (Math.cos(p.a) > 0.2 ? 'start' : Math.cos(p.a) < -0.2 ? 'end' : 'middle') : 'middle';
-        return (
-          <g key={p.key}>
-            <circle cx={p.x} cy={p.y} r={p.r} fill={p.color} />
-            {showLabels && (
-              <text x={labelOut ? lx : p.x} y={labelOut ? ly + 4 : p.y - 2} textAnchor={anchor}
-                fontFamily="var(--mono)" fontWeight="500" fontSize="12"
-                fill={labelOut ? ENS.blueMid : (p.darkInk ? ENS.ink : '#fff')}>
-                {p.label}
-              </text>
-            )}
-            {showCounts && (
-              <text x={labelOut ? lx : p.x} y={labelOut ? ly + 18 : p.y + 14} textAnchor={anchor}
-                fontFamily="var(--sans)" fontWeight="500" fontSize={labelOut ? 13 : Math.max(13, p.r * 0.42)}
-                fill={labelOut ? ENS.ink : (p.darkInk ? ENS.ink : '#fff')}
-                style={{ letterSpacing: -0.4 }}>
-                {fmt(p.count)}
-              </text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// BarsView — horizontal proportional bars. The most analytical view.
+// BarsView — horizontal proportional bars; shader fill like treemap (SVG grid under HTML bars).
 // ─────────────────────────────────────────────────────────────
 function BarsView({ items, W, H, showLabels, showCounts, total }) {
   const sorted = [...items].sort((a, b) => b.count - a.count);
@@ -293,7 +247,7 @@ function BarsView({ items, W, H, showLabels, showCounts, total }) {
   const barAreaX = padX + labelGutter;
   const barAreaW = W - padX - barAreaX;
   const barAreaH = H - padTop - padBot;
-  const rowH = barAreaH / sorted.length;
+  const rowH = barAreaH / Math.max(sorted.length, 1);
   const barH = Math.min(rowH * 0.66, 64);
   const max = Math.max(...sorted.map(s => s.count), 1);
 
@@ -304,59 +258,103 @@ function BarsView({ items, W, H, showLabels, showCounts, total }) {
   };
 
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
-      {/* baseline */}
-      <line x1={barAreaX} y1={padTop} x2={barAreaX} y2={H - padBot}
-        stroke={ENS.blueDark} strokeOpacity="0.15" strokeWidth="1" />
-
-      {/* axis ticks at 25/50/75/100% of max */}
-      {[0.25, 0.5, 0.75, 1].map((t) => {
-        const x = barAreaX + t * barAreaW;
-        return (
-          <g key={t}>
-            <line x1={x} y1={padTop} x2={x} y2={H - padBot}
-              stroke={ENS.blueDark} strokeOpacity="0.07" strokeWidth="1" strokeDasharray="2 4" />
-            <text x={x} y={H - padBot + 22} textAnchor="middle"
-              fontFamily="var(--mono)" fontSize="11" fill={ENS.quartz}>
-              {fmt(Math.round(max * t))}
-            </text>
-          </g>
-        );
-      })}
+    <div style={{ width: W, height: H, position: 'relative', overflow: 'hidden' }}>
+      <svg
+        width={W}
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ display: 'block', position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
+      >
+        <line x1={barAreaX} y1={padTop} x2={barAreaX} y2={H - padBot}
+          stroke={ENS.blueDark} strokeOpacity="0.15" strokeWidth="1" />
+        {[0.25, 0.5, 0.75, 1].map((t) => {
+          const x = barAreaX + t * barAreaW;
+          return (
+            <g key={t}>
+              <line x1={x} y1={padTop} x2={x} y2={H - padBot}
+                stroke={ENS.blueDark} strokeOpacity="0.07" strokeWidth="1" strokeDasharray="2 4" />
+              <text x={x} y={H - padBot + 22} textAnchor="middle"
+                fontFamily="var(--mono)" fontSize="11" fill={ENS.quartz}>
+                {fmt(Math.round(max * t))}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
 
       {sorted.map((it, i) => {
         const cy = padTop + rowH * i + rowH / 2;
-        const w = (it.count / max) * barAreaW;
+        const bw = Math.max((it.count / max) * barAreaW, 2);
         const pct = total > 0 ? (it.count / total) * 100 : 0;
+        const minDim = Math.min(bw, barH);
+        const ra = Math.max(0.2, Math.min(8, bw / Math.max(barH, 1)));
         return (
-          <g key={it.key}>
+          <React.Fragment key={it.key}>
             {showLabels && (
-              <text x={barAreaX - 16} y={cy + 5} textAnchor="end"
-                fontFamily="var(--mono)" fontWeight="500" fontSize="15"
-                fill={ENS.ink}>
+              <div style={{
+                position: 'absolute',
+                left: padX,
+                width: barAreaX - padX - 16,
+                top: cy - 8,
+                textAlign: 'right',
+                fontFamily: 'var(--mono)', fontWeight: 500, fontSize: 15, color: ENS.ink,
+                pointerEvents: 'none', zIndex: 2, lineHeight: 1.2,
+              }}>
                 {it.label}
-              </text>
+              </div>
             )}
-            <rect x={barAreaX} y={cy - barH / 2} width={Math.max(w, 2)} height={barH}
-              fill={it.color} rx="2" />
+            <div style={{
+              position: 'absolute',
+              left: barAreaX,
+              top: cy - barH / 2,
+              width: bw,
+              height: barH,
+              borderRadius: 2,
+              overflow: 'hidden',
+              background: it.color,
+              zIndex: 1,
+              boxSizing: 'border-box',
+            }}>
+              <div style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                minWidth: 0, minHeight: 0, overflow: 'hidden', opacity: 0.25,
+              }}>
+                <ShaderCanvas
+                  state={getShaderStateForColor(it.color, it.darkInk, i, minDim, {
+                    rectAspect: ra,
+                    cornerRadius: 0.06,
+                  })}
+                />
+              </div>
+            </div>
             {showCounts && (
-              <>
-                <text x={barAreaX + Math.max(w, 2) + 12} y={cy + 2} textAnchor="start"
-                  fontFamily="var(--sans)" fontWeight="500" fontSize="22"
-                  fill={ENS.ink} style={{ letterSpacing: -0.4 }}>
+              <div style={{
+                position: 'absolute',
+                left: barAreaX + bw + 12,
+                top: cy - barH / 2,
+                height: barH,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                zIndex: 2,
+              }}>
+                <div style={{
+                  fontFamily: 'var(--sans)', fontWeight: 500, fontSize: 22, color: ENS.ink, letterSpacing: -0.4,
+                }}>
                   {fmt(it.count)}
-                </text>
-                <text x={barAreaX + Math.max(w, 2) + 12} y={cy + 22} textAnchor="start"
-                  fontFamily="var(--mono)" fontWeight="400" fontSize="11"
-                  fill={ENS.quartz}>
+                </div>
+                <div style={{
+                  fontFamily: 'var(--mono)', fontWeight: 400, fontSize: 11, color: ENS.quartz, marginTop: 2,
+                }}>
                   {pct.toFixed(1)}%
-                </text>
-              </>
+                </div>
+              </div>
             )}
-          </g>
+          </React.Fragment>
         );
       })}
-    </svg>
+    </div>
   );
 }
 
@@ -435,49 +433,6 @@ function squarify(items, x, y, w, h) {
 function TreemapView({ items, W, H, showLabels, showCounts, total }) {
   const sorted = [...items].sort((a, b) => b.count - a.count).filter(it => it.count > 0);
   const rects = React.useMemo(() => squarify(sorted, 0, 0, W, H), [JSON.stringify(sorted), W, H]);
-
-  // Map a user-picked tile color to the closest shaderbox colorway+shade setup.
-  // This keeps per-tile shader styling aligned with the count color swatch.
-  const getShaderStateForColor = (hex, darkInk, idx, minDim) => {
-    const normalizeHex = (v) => (v || '').trim().toUpperCase();
-    const color = normalizeHex(hex);
-    const directMap = {
-      '#02293B': { palette: 2, warpShade: 0, weftShade: 1, bgShade: 2 }, // lapis 950
-      '#0082BB': { palette: 2, warpShade: 1, weftShade: 3, bgShade: 2 }, // lapis 500
-      '#39B4EA': { palette: 2, warpShade: 3, weftShade: 1, bgShade: 2 }, // lapis 400
-      '#80C4E0': { palette: 2, warpShade: 3, weftShade: 2, bgShade: 2 }, // lapis 300-ish
-      '#033010': { palette: 3, warpShade: 0, weftShade: 1, bgShade: 2 }, // peridot 950
-      '#007C20': { palette: 3, warpShade: 1, weftShade: 3, bgShade: 2 }, // peridot 500
-      '#1CBF46': { palette: 3, warpShade: 3, weftShade: 1, bgShade: 2 }, // peridot 400-ish
-      '#5A0024': { palette: 1, warpShade: 0, weftShade: 1, bgShade: 2 }, // garnet 950
-      '#E72A96': { palette: 1, warpShade: 1, weftShade: 3, bgShade: 2 }, // garnet 500
-      '#F569AB': { palette: 1, warpShade: 3, weftShade: 1, bgShade: 2 }, // garnet 400
-      '#441B03': { palette: 0, warpShade: 0, weftShade: 1, bgShade: 2 }, // citrine 950
-      '#984D1B': { palette: 0, warpShade: 1, weftShade: 3, bgShade: 2 }, // citrine 500
-      '#E7A259': { palette: 0, warpShade: 3, weftShade: 1, bgShade: 2 }, // citrine 400
-      '#191919': { palette: 4, warpShade: 0, weftShade: 1, bgShade: 2 }, // quartz 900
-      '#737373': { palette: 4, warpShade: 3, weftShade: 1, bgShade: 2 }, // quartz 400
-      '#595755': { palette: 4, warpShade: 1, weftShade: 3, bgShade: 2 }, // quartz 500
-      '#E1E1E0': { palette: 4, warpShade: 2, weftShade: 3, bgShade: 2 }, // quartz 200-ish
-      '#FAF9F7': { palette: 4, warpShade: 2, weftShade: 3, bgShade: 2 }, // quartz 50-ish
-      '#FFEC3D': { palette: 0, warpShade: 3, weftShade: 1, bgShade: 2 }, // warm accent fallback
-    };
-    const mapped = directMap[color] || { palette: 2, warpShade: 1, weftShade: 3, bgShade: 2 };
-    return {
-      pattern: idx % (PATTERNS?.length || 1),
-      palette: mapped.palette,
-      bgShade: mapped.bgShade,
-      warpShade: mapped.warpShade,
-      weftShade: mapped.weftShade,
-      // gridSize: Math.max(16, Math.min(96, Math.round(minDim * 0.22))),
-      gridSize: Math.max(16, Math.min(96, Math.round(minDim * 0.22))),
-      rectAspect: 1,
-      cornerRadius: 0.18,
-      gradSteps: 0,
-      shimmer: !darkInk && idx % 3 === 0,
-      skipEntranceReveal: true
-    };
-  };
 
   const fmt = (n) => {
     if (n >= 1e6) return (n / 1e6).toFixed(n >= 10e6 ? 1 : 2).replace(/\.0+$|(\.\d*?)0+$/, '$1') + 'M';
@@ -584,8 +539,7 @@ function TreemapView({ items, W, H, showLabels, showCounts, total }) {
 export function SubnameDiagram({ items, view, showLabels, showCounts, W, H }) {
   const total = items.reduce((s, x) => s + x.count, 0);
   const View = view === 'treemap' ? TreemapView
-    : view === 'orbit' ? OrbitView
-      : view === 'bars' ? BarsView
-        : PackedView;
+    : view === 'bars' ? BarsView
+      : PackedView;
   return <View items={items} W={W} H={H} showLabels={showLabels} showCounts={showCounts} total={total} />;
 }

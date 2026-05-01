@@ -1,5 +1,6 @@
 // ShaderCanvas — WebGL renderer for the shaderbox fragment (see shader-source.js).
 // Vite: shader strings and pattern atlas come from ES modules (no globals).
+// `state.animationSpeed` scales wall-clock → shader time (default slow); affects u_time and shimmer drift.
 
 import React from 'react';
 import { VERTEX_SOURCE, FRAGMENT_SOURCE, PATTERNS, buildPatternTexture } from './shader-source.js';
@@ -184,14 +185,15 @@ export function ShaderCanvas({ state, onCanvasRef }) {
       const t = (Date.now() - startTime) / 1000;
       const dt = (Date.now() - lastFrameMs) / 1000;
       lastFrameMs = Date.now();
-      if (s.shimmerPlaying !== false) shimmerTime += dt;
+      const anim = Math.max(0.02, Math.min(3, s.animationSpeed ?? 0.28));
+      if (s.shimmerPlaying !== false) shimmerTime += dt * anim;
 
       const pat = PATTERNS[s.pattern] || PATTERNS[0];
-      if (lastPat !== -1 && s.pattern !== lastPat) revealStart = t;
+      if (lastPat !== -1 && s.pattern !== lastPat) revealStart = t * anim;
       lastPat = s.pattern;
 
       gl.useProgram(prog);
-      f1(U.time, t);
+      f1(U.time, t * anim);
       f2(U.resolution, canvas.width, canvas.height);
       f1(U.patternIndex, s.pattern);
       f1(U.tileW, pat.tileW);
