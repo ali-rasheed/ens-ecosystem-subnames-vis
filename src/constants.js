@@ -5,7 +5,7 @@ import { ENS } from './palette.js';
 export const ASPECTS = {
   '1:1': { w: 1200, h: 1200, label: '1:1 · Square' },
   '16:9': { w: 1920, h: 1080, label: '16:9 · Wide' },
-  '4:3': { w: 1600, h: 1200, label: '4:3 · Classic' },
+  '3:4': { w: 1200, h: 1600, label: '3:4 · Portrait' },
 };
 
 /** Color swatches for parent rows: [hex, darkInk?] */

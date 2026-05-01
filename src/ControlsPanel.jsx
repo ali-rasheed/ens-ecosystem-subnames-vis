@@ -180,10 +180,10 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
         <Seg options={[
           { value: '1:1', label: '1:1' },
           { value: '16:9', label: '16:9' },
-          { value: '4:3', label: '4:3' },
+          { value: '3:4', label: '3:4' },
         ]} value={state.aspect || '1:1'} onChange={v => update({ aspect: v })} />
         <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 11, color: '#A1A1A1' }}>
-          {({ '1:1': '1200 × 1200 · IG, LinkedIn', '16:9': '1920 × 1080 · X / Twitter', '4:3': '1600 × 1200 · Carousel' })[state.aspect || '1:1']}
+          {({ '1:1': '1200 × 1200 · IG, LinkedIn', '16:9': '1920 × 1080 · X / Twitter', '3:4': '1200 × 1600 · Portrait' })[state.aspect || '1:1']}
         </div>
       </Section>
 
