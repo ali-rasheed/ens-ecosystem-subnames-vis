@@ -459,7 +459,8 @@ function TreemapView({ items, W, H, showLabels, showCounts, total }) {
         // Corner markers — small filled squares, scale with rect (positions use inner box;
         // border-box + border otherwise shifts bottom/right corners past the padding edge).
         const markerSize = 12;
-        const markerInset = Math.max(8, Math.min(minDim * 0.05, 18));
+        // Fixed inset keeps corner-marker spacing visually consistent across all tiles.
+        const markerInset = 12;
         const innerW = rw - 2 * TREEMAP_TILE_BORDER_PX;
         const innerH = rh - 2 * TREEMAP_TILE_BORDER_PX;
 
