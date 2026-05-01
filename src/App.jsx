@@ -76,11 +76,11 @@ function DiagramFrame({ state, W, H }) {
 
   const base = Math.min(W, H);
   // Equal inset from the frame edge on all sides (export “post”).
-  const postPad = Math.round(base * 0.06);
-  const titleSize = Math.round(base * 0.058);
-  const totalLabelSize = Math.round(base * 0.014);
-  const totalNumSize = Math.round(base * 0.050);
-  const headerGap = Math.round(base * 0.03);
+  const postPad = Math.round(base * 0.055);
+  const titleSize = Math.round(base * 0.05);
+  const totalLabelSize = Math.round(base * 0.013);
+  const totalNumSize = Math.round(base * 0.046 * 1.25);
+  const headerGap = Math.round(base * 0.025);
 
   const legendSize = Math.round(base * 0.017);
   const legendCountSize = Math.round(base * 0.015);
@@ -151,7 +151,7 @@ function DiagramFrame({ state, W, H }) {
             </div>
           }
         </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{ textAlign: 'right', flexShrink: 0, paddingTop: Math.round(titleSize * 0.2) }}>
           <div style={{
             fontFamily: 'var(--mono)', fontSize: totalLabelSize, fontWeight: 500,
             color: '#737373', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6
@@ -255,6 +255,7 @@ export default function App() {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (saved && saved.items) {
         if (saved.view === 'orbit') return { ...saved, view: 'treemap' };
+        if (saved.aspect === '4:3') return { ...saved, aspect: '3:4' };
         return saved;
       }
     } catch { /* ignore */ }
