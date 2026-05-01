@@ -69,11 +69,13 @@ function packCircles(items, W, H) {
   // Pick a target maximum radius based on smaller viewport dim, then
   // derive radii from sqrt(count) — area-proportional.
   const maxDim = Math.min(W, H);
-  const maxR = maxDim * 0.36;
+  // Global packed-bubble scale adjustment (smaller by 1.125x).
+  const bubbleScale = 1 / 1.125;
+  const maxR = maxDim * 0.36 * bubbleScale;
   const maxCount = items[0].count;
   const radii = items.map(it => Math.sqrt(it.count / maxCount) * maxR);
   // Floor — keep tiny entries visible
-  const floorR = Math.max(18, maxDim * 0.035);
+  const floorR = Math.max(18 * bubbleScale, maxDim * 0.035 * bubbleScale);
   const finalR = radii.map(r => Math.max(r, floorR));
 
   const placed = [];
