@@ -169,7 +169,7 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
       flexShrink: 0,
     }}>
       <div style={{ padding: '24px 22px 18px', borderBottom: '1px solid #E1E1E0' }}>
-        <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: ENS.blue, marginBottom: 6, fontFamily: 'var(--mono)', fontWeight: 500 }}>ENS · Ecosysteme</div>
+        <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: ENS.blue, marginBottom: 6, fontFamily: 'var(--mono)', fontWeight: 500 }}>ENS · Ecosystem</div>
         <div style={{ fontSize: 22, fontWeight: 500, letterSpacing: -0.5, lineHeight: 1.05 }}>Subname Visualizer</div>
         <div style={{ fontSize: 12, color: '#737373', marginTop: 6, fontFamily: 'var(--mono)' }}>
           Spatial diagram of registered subnames — proportional to count.
