@@ -65,14 +65,18 @@ function CountRow({ item, onChange, onColor, onRemove, paletteOpen, onPaletteOpe
           boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.08)',
         }} title="Change color" />
         {paletteOpen && (
-          <div style={{ position: 'absolute', top: 28, left: 0, zIndex: 10,
+          <div style={{
+            position: 'absolute', top: 28, left: 0, zIndex: 10,
             background: '#fff', border: '1px solid #E1E1E0', borderRadius: 6, padding: 6,
             display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+          }}>
             {SWATCHES.map(([col, dark]) => (
               <button key={col} onClick={() => { onColor(col, dark); onPaletteOpen(); }}
-                style={{ width: 22, height: 22, borderRadius: 3, border: item.color === col ? '2px solid ' + ENS.ink : '1px solid rgba(0,0,0,0.1)',
-                  background: col, cursor: 'pointer', padding: 0 }} />
+                style={{
+                  width: 22, height: 22, borderRadius: 3, border: item.color === col ? '2px solid ' + ENS.ink : '1px solid rgba(0,0,0,0.1)',
+                  background: col, cursor: 'pointer', padding: 0
+                }} />
             ))}
           </div>
         )}
@@ -82,7 +86,7 @@ function CountRow({ item, onChange, onColor, onRemove, paletteOpen, onPaletteOpe
           autoFocus
           onChange={e => setDraft(e.target.value)}
           onBlur={() => { onChange({ label: draft }); setEditing(false); }}
-          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { setDraft(item.label); setEditing(false); }}}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { setDraft(item.label); setEditing(false); } }}
           style={{
             flex: 1, minWidth: '100%', background: '#fff', color: '#011a25',
             border: '1px solid ' + ENS.blue, borderRadius: 3, padding: '6px 8px',
@@ -90,10 +94,12 @@ function CountRow({ item, onChange, onColor, onRemove, paletteOpen, onPaletteOpe
           }} />
       ) : (
         <div onClick={() => setEditing(true)}
-          style={{ flex: 1, minWidth: 0, padding: '6px 8px', fontSize: 13, fontFamily: 'var(--mono)',
+          style={{
+            flex: 1, minWidth: 0, padding: '6px 8px', fontSize: 13, fontFamily: 'var(--mono)',
             fontWeight: 500, color: '#011a25', cursor: 'text', borderRadius: 3,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            border: '1px solid transparent' }}
+            border: '1px solid transparent'
+          }}
           onMouseEnter={e => e.currentTarget.style.background = '#FAF9F7'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           title="Click to rename">
@@ -114,9 +120,11 @@ function CountRow({ item, onChange, onColor, onRemove, paletteOpen, onPaletteOpe
         onFocus={e => e.currentTarget.style.borderColor = ENS.blue}
         onBlur={e => e.currentTarget.style.borderColor = '#E1E1E0'} />
       <button onClick={onRemove} title="Remove row"
-        style={{ width: 22, height: 22, borderRadius: 3, border: 'none', background: 'transparent',
+        style={{
+          width: 22, height: 22, borderRadius: 3, border: 'none', background: 'transparent',
           color: '#A1A1A1', cursor: 'pointer', padding: 0, fontSize: 16, lineHeight: 1, flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)' }}
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)'
+        }}
         onMouseEnter={e => { e.currentTarget.style.background = '#FEEAF0'; e.currentTarget.style.color = ENS.magenta || '#E72A96'; }}
         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#A1A1A1'; }}>
         ×
@@ -144,6 +152,7 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
   const [openPalette, setOpenPalette] = React.useState(null);
 
   const total = state.items.reduce((s, x) => s + (Number(x.count) || 0), 0);
+  const totalApprox = `~${(Math.round(total / 1_000_000) * 1_000_000).toLocaleString()}`;
 
   return (
     <div style={{
@@ -208,11 +217,13 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
           onMouseLeave={e => { e.currentTarget.style.borderColor = '#C7C6C4'; e.currentTarget.style.color = '#737373'; }}>
           + Add parent
         </button>
-        <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px dashed #C7C6C4',
-          display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)' }}>
+        <div style={{
+          marginTop: 14, paddingTop: 14, borderTop: '1px dashed #C7C6C4',
+          display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)'
+        }}>
           <span style={{ fontSize: 12, color: '#737373' }}>Total</span>
           <span style={{ fontSize: 14, fontWeight: 500, color: ENS.ink, fontVariantNumeric: 'tabular-nums' }}>
-            {total.toLocaleString()}
+            {totalApprox}
           </span>
         </div>
         <button onClick={onReset} style={{
@@ -256,9 +267,11 @@ export function ControlsPanel({ state, setState, onExportPng, onExportSvg, expor
       </Section>
 
       <div style={{ flex: 1 }} />
-      <div style={{ padding: '14px 22px 18px', fontSize: 10, color: '#A1A1A1',
-        fontFamily: 'var(--mono)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
-subname visualizer v1.0       </div>
+      <div style={{
+        padding: '14px 22px 18px', fontSize: 10, color: '#A1A1A1',
+        fontFamily: 'var(--mono)', letterSpacing: 0.5, textTransform: 'uppercase'
+      }}>
+        subname visualizer v1.0       </div>
     </div>
   );
 }

@@ -72,6 +72,7 @@ function Stage({ children, stageRef, W, H }) {
 function DiagramFrame({ state, W, H }) {
   const { title, items, view, showLabels, showCounts, showLegend } = state;
   const total = items.reduce((s, x) => s + (Number(x.count) || 0), 0);
+  const totalApprox = `~${(Math.round(total / 1_000_000) * 1_000_000).toLocaleString()}`;
 
   const base = Math.min(W, H);
   // Equal inset from the frame edge on all sides (export “post”).
@@ -162,7 +163,7 @@ function DiagramFrame({ state, W, H }) {
             color: ENS.blue, letterSpacing: -totalNumSize * 0.025, lineHeight: 1,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {total.toLocaleString()}
+            {totalApprox}
           </div>
         </div>
       </div>
