@@ -11,4 +11,6 @@ npm install
 npm run dev
 ```
 
+Opens [https://subname-visualizer.localhost](https://subname-visualizer.localhost) via [Portless](https://port1355.dev/).
+
 Build for production: `npm run build`.
